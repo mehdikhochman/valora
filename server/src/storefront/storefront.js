@@ -113,7 +113,8 @@
     const fill = 0.8 + ((h >>> 8) % 10) / 100;
     const brand = (p.house || settings.brand || '').toUpperCase().slice(0, 18);
     const name = String(p.name).slice(0, 22);
-    const nameSize = name.length > 14 ? 11 : 14;
+    // Fit the name inside the 72-unit label (Cormorant averages about 0.45 em per character).
+    const nameSize = Math.min(13, 62 / (name.length * 0.45)).toFixed(1);
     const labelY = body.neck + (284 - body.neck) * 0.48;
     return `<svg viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Flacon ${esc(p.name)}">
 <defs>
