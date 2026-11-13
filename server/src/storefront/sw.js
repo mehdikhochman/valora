@@ -2,7 +2,7 @@
 //   - Pages: network first (always the latest prices), the last copy when offline.
 //   - Fonts, brand images and photos: cache first (their names never change content).
 //   - Orders and counters (/api/*) and the admin are never cached.
-const VERSION = 'vallora-v2';
+const VERSION = 'vallora-v3'; // bump when a cached brand image changes (v3: orange logo)
 const SHELL = ['/', '/assets/brand/emblem-ink.webp', '/assets/brand/wordmark-ink.webp', '/assets/brand/silhouette-640.webp'];
 
 self.addEventListener('install', (event) => {

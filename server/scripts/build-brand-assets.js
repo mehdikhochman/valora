@@ -14,7 +14,8 @@ const BLACK_POINT = 14;   // anything darker is fully transparent (JPEG noise)
 const EMBLEM_ROWS = [96, 940];
 const WORDMARK_ROWS = [946, 1124];
 const DARK = { r: 12, g: 8, b: 7 };
-const INK = { r: 28, g: 23, b: 20 };
+// Colour of the flat logo on the light pages: the burnt orange of the terracotta wall photo.
+const INK = { r: 168, g: 74, b: 30 };
 
 async function transparentLogo() {
   const { data, info } = await sharp(path.join(SOURCE, 'logo-on-black.jpg')).raw().toBuffer({ resolveWithObject: true });
@@ -46,7 +47,7 @@ async function writeLogos(logo) {
   await sharp(emblem).resize({ height: 96 }).png({ compressionLevel: 9 }).toFile(path.join(OUT, 'emblem-96.png'));
   await sharp(wordmark).resize({ width: 640 }).webp({ quality: 90, alphaQuality: 92 }).toFile(path.join(OUT, 'wordmark.webp'));
   await sharp(full).resize({ width: 720 }).webp({ quality: 88, alphaQuality: 90 }).toFile(path.join(OUT, 'logo.webp'));
-  // Solid ink versions for the light pages: the logo's shape, one flat colour.
+  // Solid versions for the light pages: the logo's shape, one flat colour (INK).
   await inkVersion(emblem, { height: 120 }, 'emblem-ink.webp');
   await inkVersion(wordmark, { width: 640 }, 'wordmark-ink.webp');
   await inkVersion(full, { width: 480 }, 'logo-ink.webp');

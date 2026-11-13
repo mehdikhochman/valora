@@ -163,20 +163,76 @@ ${label ? `<g text-anchor="middle"><rect x="64" y="${labelY - 20}" width="72" he
       <div class="card-meta">
         <h3><button type="button">${esc(p.name)}</button></h3>
         <p class="card-sub">${esc(concLabel(p))} · ${esc(famLabel(p.fam))}</p>
-        <div class="card-foot">${fromPrice(p)}${p.avail === 'sold_out' ? '' : `<button class="add" type="button" aria-label="Ajouter ${esc(p.name)} à ma sélection"><svg class="i"><use href="#i-plus"/></svg></button>`}</div>
+        <div class="card-foot">${fromPrice(p)}${p.avail === 'sold_out' ? '' : `<button class="add" type="button" aria-label="Ajouter ${esc(p.name)} à ma sélection" aria-expanded="false"><svg class="i"><use href="#i-plus"/></svg></button>`}</div>
       </div>`;
     el.querySelector('h3 button').addEventListener('click', () => openPerfume(p));
-    el.querySelector('.add')?.addEventListener('click', (e) => {
-      if (p.sizes.length > 1) return openPerfume(p);
-      addToBag(p, p.sizes[0]?.l ?? '', 1);
-      const btn = e.currentTarget;
-      btn.classList.add('done');
-      btn.innerHTML = '<svg class="i"><use href="#i-check"/></svg>';
-      setTimeout(() => { btn.classList.remove('done'); btn.innerHTML = '<svg class="i"><use href="#i-plus"/></svg>'; }, 1500);
-    });
+    // The + adds to the bag without opening the perfume: a small picker opens on the card to
+    // choose the size (when there are several) and the quantity.
+    el.querySelector('.add')?.addEventListener('click', (e) => togglePicker(el, p, e.currentTarget));
     cardCache.set(key, el);
     return el;
   }
+
+  function flashAdded(btn) {
+    btn.classList.add('done');
+    btn.innerHTML = '<svg class="i"><use href="#i-check"/></svg>';
+    setTimeout(() => { btn.classList.remove('done'); btn.innerHTML = '<svg class="i"><use href="#i-plus"/></svg>'; }, 1500);
+  }
+
+  let openPicker = null;
+  function closePicker() {
+    if (!openPicker) return;
+    openPicker.el.remove();
+    openPicker.btn.setAttribute('aria-expanded', 'false');
+    openPicker = null;
+  }
+  function togglePicker(cardEl, p, btn) {
+    const same = openPicker?.btn === btn;
+    closePicker();
+    if (same) return;
+    const el = document.createElement('div');
+    el.className = 'pick';
+    el.setAttribute('role', 'group');
+    el.setAttribute('aria-label', `Ajouter ${p.name}`);
+    let sizeIndex = 0;
+    let qty = 1;
+    const sizeLabel = () => p.sizes[sizeIndex]?.l ?? '';
+    const sizes = p.sizes.length > 1
+      ? `<span class="pick-h">Format</span><div class="pick-sizes" role="radiogroup" aria-label="Format">${p.sizes.map((s, i) => `<button type="button" role="radio" data-i="${i}">${esc(s.l)}</button>`).join('')}</div>`
+      : '';
+    el.innerHTML = `${sizes}<span class="pick-h">Quantité${p.sizes.length === 1 ? ` · ${esc(p.sizes[0].l)}` : ''}</span>
+      <div class="pick-qty"><button type="button" data-d="-1" aria-label="Un de moins"><svg class="i"><use href="#i-minus"/></svg></button><output aria-live="polite"></output><button type="button" data-d="1" aria-label="Un de plus"><svg class="i"><use href="#i-plus"/></svg></button></div>
+      <button type="button" class="pick-add"></button>`;
+    const update = () => {
+      el.querySelectorAll('[data-i]').forEach((b) => b.setAttribute('aria-checked', String(Number(b.dataset.i) === sizeIndex)));
+      el.querySelector('output').textContent = qty;
+      const unit = sizePrice(p, sizeLabel());
+      el.querySelector('.pick-add').textContent = unit == null ? 'Ajouter' : `Ajouter · ${money(unit * qty)}`;
+    };
+    update();
+    el.addEventListener('click', (e) => {
+      const size = e.target.closest('[data-i]');
+      const step = e.target.closest('[data-d]');
+      if (size) { sizeIndex = Number(size.dataset.i); update(); }
+      else if (step) { qty = Math.min(20, Math.max(1, qty + Number(step.dataset.d))); update(); }
+      else if (e.target.closest('.pick-add')) {
+        addToBag(p, sizeLabel(), qty);
+        closePicker();
+        flashAdded(btn);
+        btn.focus();
+      }
+    });
+    cardEl.append(el);
+    btn.setAttribute('aria-expanded', 'true');
+    openPicker = { el, btn };
+    el.querySelector('button').focus({ preventScroll: true });
+  }
+  document.addEventListener('click', (e) => {
+    if (openPicker && !openPicker.el.contains(e.target) && !openPicker.btn.contains(e.target)) closePicker();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && openPicker) { const { btn } = openPicker; closePicker(); btn.focus(); }
+  });
 
   // ---------- Header ----------
   const bar = $('#bar');
@@ -353,11 +409,14 @@ ${label ? `<g text-anchor="middle"><rect x="64" y="${labelY - 20}" width="72" he
   $('#menuList').innerHTML = cats.map(([v, l, n]) => `<li><a href="#collection" data-cat="${esc(v)}">${esc(l === 'Tout' ? 'Toute la collection' : l)}<span class="n">${n}</span></a></li>`).join('');
 
   const toastEl = $('#toast');
-  function toast(text) {
-    toastEl.innerHTML = `<svg class="i"><use href="#i-check"/></svg>${esc(text)}`;
+  // An optional action ({ label, run }) adds a button to the message, e.g. "Commander".
+  function toast(text, action) {
+    toastEl.innerHTML = `<svg class="i"><use href="#i-check"/></svg>${esc(text)}${action ? `<button type="button" class="toast-act">${esc(action.label)}</button>` : ''}`;
     toastEl.classList.add('on');
+    toastEl.classList.toggle('has-act', Boolean(action));
+    if (action) toastEl.querySelector('.toast-act').addEventListener('click', () => { toastEl.classList.remove('on'); action.run(); });
     clearTimeout(toastEl.t);
-    toastEl.t = setTimeout(() => toastEl.classList.remove('on'), 2400);
+    toastEl.t = setTimeout(() => toastEl.classList.remove('on'), action ? 4000 : 2400);
   }
 
   // ---------- Similarity ----------
@@ -516,9 +575,8 @@ ${label ? `<g text-anchor="middle"><rect x="64" y="${labelY - 20}" width="72" he
   const bagCount = () => bag.reduce((n, line) => n + line.qty, 0);
   const lineTotal = (line) => { const unit = sizePrice(byId.get(line.id), line.size); return unit == null ? null : unit * line.qty; };
   const subtotal = () => (bag.some((l) => lineTotal(l) == null) ? null : bag.reduce((s, l) => s + lineTotal(l), 0));
-  let method = 'delivery';
+  // Every order is delivered: Vallora has no boutique to collect from.
   function deliveryFee(sub) {
-    if (method === 'pickup') return 0;
     if (settings.freeFromCents != null && sub != null && sub >= settings.freeFromCents) return 0;
     return settings.deliveryCents;
   }
@@ -539,7 +597,7 @@ ${label ? `<g text-anchor="middle"><rect x="64" y="${labelY - 20}" width="72" he
     saveBag();
     updateCount(true);
     track('add', p.id);
-    if (!silent && !sheet.open) toast(`${p.name} ajouté à votre sélection`);
+    if (!silent && !sheet.open) toast(qty > 1 ? `${qty} × ${p.name} ajoutés` : `${p.name} ajouté`, { label: 'Commander', run: () => openBag() });
   }
 
   const bagD = $('#bagD');
@@ -555,7 +613,7 @@ ${label ? `<g text-anchor="middle"><rect x="64" y="${labelY - 20}" width="72" he
     const sub = subtotal();
     const fee = deliveryFee(sub);
     const total = sub != null && fee != null ? sub + fee : null;
-    const feeText = method === 'pickup' ? 'Retrait offert' : fee === 0 ? 'Offerte' : fee == null ? 'Confirmée sur WhatsApp' : money(fee);
+    const feeText = fee === 0 ? 'Offerte' : fee == null ? 'Confirmée sur WhatsApp' : money(fee);
     return `<div class="totals"><div><span>Sous-total</span><span>${money(sub)}</span></div>
       <div><span>Livraison</span><span>${feeText}</span></div>
       <div class="grand"><span>Total</span><span>${total == null ? (sub == null ? 'Sur devis' : `${money(sub)} + livraison`) : money(total)}</span></div></div>`;
@@ -563,7 +621,7 @@ ${label ? `<g text-anchor="middle"><rect x="64" y="${labelY - 20}" width="72" he
 
   function freeDeliveryHtml() {
     const sub = subtotal();
-    if (settings.freeFromCents == null || sub == null || method === 'pickup') return '';
+    if (settings.freeFromCents == null || sub == null) return '';
     const left = settings.freeFromCents - sub;
     const ratio = Math.min(1, sub / settings.freeFromCents);
     return `<div class="free">${left > 0 ? `Plus que <b>${money(left)}</b> pour la livraison offerte` : 'La livraison vous est offerte'}<div class="bar-track"><i style="transform:scaleX(${ratio})"></i></div></div>`;
@@ -620,22 +678,11 @@ ${label ? `<g text-anchor="middle"><rect x="64" y="${labelY - 20}" width="72" he
     body.replaceChildren($('#checkoutTpl').content.cloneNode(true));
     const saved = store.get(CUSTOMER_KEY, {});
     for (const [k, v] of Object.entries(saved)) { const input = body.querySelector(`[name="${k}"]`); if (input && k !== 'website') input.value = v; }
-    if (settings.pickup) {
-      $('#methodField').hidden = false;
-      $$('#methodField [data-method]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.method === method)));
-      $('#addressField').hidden = method === 'pickup';
-    } else method = 'delivery';
     $('#bagFoot').innerHTML = `${totalsHtml()}<div style="display:grid;gap:10px;margin-top:16px">
       <button class="btn btn-wa btn-block" type="submit" form="checkout" id="sendOrder"><svg class="i" style="fill:#5fdc8f;stroke:none"><use href="#i-wa"/></svg>Envoyer ma commande</button>
       <p class="form-note" style="text-align:center">Vous relirez le message dans WhatsApp avant de l’envoyer.</p></div>`;
     $('#checkout').addEventListener('submit', submitOrder);
     $('#checkout').addEventListener('input', () => { $('#formError').innerHTML = ''; });
-    $('#methodField').addEventListener('click', (e) => {
-      const b = e.target.closest('[data-method]');
-      if (!b) return;
-      method = b.dataset.method;
-      renderCheckout();
-    });
     $('#locate').addEventListener('click', shareLocation);
     if (location_) $('#locate span').textContent = 'Position ajoutée ✓';
   }
@@ -665,7 +712,7 @@ ${label ? `<g text-anchor="middle"><rect x="64" y="${labelY - 20}" width="72" he
     for (const input of form.querySelectorAll('input[required]')) {
       if (!input.checkValidity()) { input.focus(); return `Vérifiez le champ « ${input.labels[0].textContent} ».`; }
     }
-    if (method === 'delivery' && values.address.length < 3) { $('#c-address').focus(); return 'Indiquez une adresse ou un point de repère.'; }
+    if (values.address.length < 3) { $('#c-address').focus(); return 'Indiquez une adresse ou un point de repère.'; }
     return '';
   }
 
@@ -683,7 +730,7 @@ ${label ? `<g text-anchor="middle"><rect x="64" y="${labelY - 20}" width="72" he
     const payload = {
       idempotencyKey,
       website: values.website,
-      customer: { name: values.name, phone: values.phone, city: values.city, address: values.address, note: values.note, delivery: method },
+      customer: { name: values.name, phone: values.phone, city: values.city, address: values.address, note: values.note, delivery: 'delivery' },
       location: location_,
       items: bag.map((l) => ({ perfumeId: l.id, quantity: l.qty, ...(l.size ? { option: l.size } : {}) })),
     };
@@ -713,9 +760,9 @@ ${label ? `<g text-anchor="middle"><rect x="64" y="${labelY - 20}" width="72" he
     return [
       settings.greeting, 'Je souhaite commander :', '',
       ...bag.map((l) => { const p = byId.get(l.id); return `• ${l.qty} × ${p.name}${l.size ? ` · ${l.size}` : ''} — ${money(lineTotal(l))}`; }),
-      '', `Sous-total : ${money(sub)}`, method === 'pickup' ? 'Retrait en boutique' : `Livraison : ${fee === 0 ? 'offerte' : fee == null ? 'à confirmer' : money(fee)}`,
+      '', `Sous-total : ${money(sub)}`, `Livraison : ${fee === 0 ? 'offerte' : fee == null ? 'à confirmer' : money(fee)}`,
       `*Total : ${sub != null && fee != null ? money(sub + fee) : 'à confirmer'}*`, '',
-      `Nom : ${v.name}`, `Téléphone : ${v.phone}`, method === 'pickup' ? `Ville : ${v.city}` : `Adresse : ${v.address}, ${v.city}`,
+      `Nom : ${v.name}`, `Téléphone : ${v.phone}`, `Adresse : ${v.address}, ${v.city}`,
       ...(location_ ? [`Position : https://maps.google.com/?q=${location_.lat},${location_.lng}`] : []),
       ...(v.note ? [`Note : ${v.note}`] : []),
     ].join('\n');

@@ -23,7 +23,8 @@ const quiet = () => {};
 test('loads the starter perfumes, each with sizes and notes, and the guide', async () => {
   assert.equal(await seedCatalogue({ repos: app.repos, log: quiet }), true);
   const perfumes = await app.repos.perfumes.listPublished();
-  assert.equal(perfumes.length, 16);
+  assert.equal(perfumes.length, 14);
+  assert.ok(perfumes.every((perfume) => perfume.sizes.every((size) => size.label === '50 ml')), 'only 50 ml bottles');
   assert.ok(perfumes.every((perfume) => perfume.notes_top && perfume.notes_base), 'every perfume has notes');
   assert.ok(perfumes.every((perfume) => perfume.sizes.length || perfume.price_cents), 'every perfume has a price');
   assert.equal((await app.repos.guide.list()).length, 7);
@@ -40,18 +41,18 @@ test('every starter perfume has its own page with a product preview', async () =
   assert.match(response.body, /"lowPrice":25000/);
   assert.match(response.body, /data-start="or-sillage"/);
   const sitemap = (await app.inject({ url: '/sitemap.xml' })).body;
-  assert.equal((sitemap.match(/<loc>/g) ?? []).length, 17);
+  assert.equal((sitemap.match(/<loc>/g) ?? []).length, 15);
 });
 
 test('the dashboard asks the team to review starter perfumes until they do', async () => {
   const status = await app.repos.perfumes.launchStatus();
-  assert.equal(status.untouched, 16);
-  assert.equal(status.without_photos, 16);
+  assert.equal(status.untouched, 14);
+  assert.equal(status.without_photos, 14);
 });
 
 test('runs only once, so perfumes the shop deletes do not come back', async () => {
   const [first] = await app.repos.perfumes.list();
   await app.repos.perfumes.remove(first.id);
   assert.equal(await seedCatalogue({ repos: app.repos, log: quiet }), false);
-  assert.equal((await app.repos.perfumes.listPublished()).length, 15);
+  assert.equal((await app.repos.perfumes.listPublished()).length, 13);
 });

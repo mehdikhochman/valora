@@ -16,14 +16,15 @@ an admin panel, and sees what visitors look at.
 
 ## What a customer can do
 
-- Browse by category (Pour elle, Pour lui, Mixte, Huiles précieuses, Coffrets) and filter by
+- Browse by category (Pour elle, Pour lui, Mixte, Coffrets) and filter by
   olfactive family, concentration, sillage, house, budget and stock.
 - Search by name or by note ("vanille", "oud"), with or without accents, and with typos.
 - Open a perfume: its sizes and prices, notes (top, heart, base), sillage, the best moment to
   wear it, and similar perfumes.
 - Take the four-question scent finder, which ranks the collection against their answers.
+- Add a perfume from the collection with the + (choose the quantity there), or from its page.
 - Build a selection, give their name and address, and send the order on WhatsApp, already
-  written, with an order number. Pick-up in the boutique is offered if the shop sets an address.
+  written, with an order number. Every order is delivered: Vallora has no boutique.
 - Share a perfume's link: WhatsApp, Instagram and Facebook show its name, price and picture.
 - Install the shop on their phone's home screen and browse it offline.
 
@@ -39,13 +40,13 @@ an admin panel, and sees what visitors look at.
 
 ## Before going live
 
-The site starts with 16 example perfumes so it is complete on day one. Their names, notes and
-prices (in CFA francs) are examples: confirm or replace each one in the admin. Also set:
+The site starts with 14 example perfumes so it is complete on day one, each in the shop's single
+bottle size, 50 ml. Their names, notes and prices (in CFA francs) are examples: confirm or replace
+each one in the admin. The WhatsApp number (+225 05 96 63 68 60) and the Instagram and TikTok
+accounts (@vallora.ci) are preset; change them in Settings → Contact. Also set:
 
-1. the WhatsApp number that receives orders (Settings → Contact),
-2. the delivery fee and the free-delivery threshold, if any,
-3. Instagram and TikTok accounts,
-4. photos of the bottles (a PNG with a transparent background looks best). Until then the shop
+1. the delivery fee and the free-delivery threshold, if any,
+2. photos of the bottles (a PNG with a transparent background looks best). Until then the shop
    draws each bottle.
 
 Texts that describe delivery times, payment by Mobile Money, returns and the Abidjan address are

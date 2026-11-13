@@ -35,7 +35,7 @@ two Vercel-connected services. Set them up once:
    - `WHATSAPP_NUMBER` (optional): the number that receives orders, digits only, e.g. `2250700000000`
 5. **Redeploy.** The build runs `npm run vercel-build` (`scripts/setup.js`), which:
    - creates or updates the tables;
-   - loads the 16 starter perfumes and the guide (once; an interrupted import finishes on the
+   - loads the 14 starter perfumes and the guide (once; an interrupted import finishes on the
      next deploy, and perfumes you delete later never come back);
    - creates your owner account;
    - sets the WhatsApp number from `WHATSAPP_NUMBER`, if you added it and the admin has none yet.
@@ -81,7 +81,7 @@ npm run bench   # response times of the shop page (server must be running)
 | Perfumes | Add, edit, duplicate, archive. Sizes with their own prices, former price, notes, family, sillage, moment, stock level, badges, "Nouveautés", collections, photos (resized in the browser before upload), order in the shop, bulk actions |
 | Categories / Collections | The shop's menu and filters |
 | Guide | The questions customers ask: ordering, delivery, payment, authenticity, care |
-| Settings | Announcement, hero texts, currency (F CFA by default), delivery fee and free-delivery threshold, pick-up address, payment note, WhatsApp number and greeting, policies, SEO *(owners)* |
+| Settings | Announcement, hero texts, currency (F CFA by default), delivery fee and free-delivery threshold, payment note, WhatsApp number and greeting, policies, SEO *(owners)* |
 | Team | Add people as *owner* or *editor*, reset passwords *(owners)* |
 | Activity | Who changed what, and when |
 | Backup | Download everything as JSON and the orders spreadsheet *(owners)* |

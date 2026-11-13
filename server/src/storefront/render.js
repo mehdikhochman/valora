@@ -183,7 +183,6 @@ async function buildCatalogue(repos, settings) {
       currency: settings.currency,
       deliveryCents: money('delivery_fee'),
       freeFromCents: money('free_delivery_from'),
-      pickup: settings.pickup_address,
       ordersOpen: settings.orders_open === '1',
       closedMessage: settings.orders_closed_message,
       whatsapp: settings.whatsapp_number,

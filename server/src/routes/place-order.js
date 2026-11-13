@@ -11,7 +11,6 @@ import { HttpError, badRequest } from '../lib/http-error.js';
 
 const MAX_ORDERS_PER_IP_PER_DAY = 10;
 const DAY_MS = 24 * 60 * 60 * 1000;
-const PICKUP_ADDRESS = 'Retrait en boutique';
 
 const text = (minLength, maxLength) => ({ type: 'string', minLength, maxLength });
 
@@ -33,6 +32,7 @@ export const ORDER_BODY_SCHEMA = {
         city: text(2, 60),
         address: text(0, 300),
         note: text(0, 500),
+        // Vallora has no boutique: every order is delivered. Still accepted from older pages.
         delivery: { type: 'string', enum: ['delivery', 'pickup'] },
       },
     },
@@ -109,8 +109,7 @@ async function resolveItem(repos, item) {
   return { perfumeId: perfume.id, perfumeName: perfume.name, optionLabel: size.label, quantity: item.quantity, unitPriceCents };
 }
 
-export function deliveryFeeCents(settings, subtotalCents, method) {
-  if (method === 'pickup') return 0;
+export function deliveryFeeCents(settings, subtotalCents) {
   const freeFrom = settings.free_delivery_from === '' ? null : Number(settings.free_delivery_from);
   if (freeFrom !== null && subtotalCents !== null && subtotalCents >= freeFrom) return 0;
   return settings.delivery_fee === '' ? null : Number(settings.delivery_fee);
@@ -118,13 +117,12 @@ export function deliveryFeeCents(settings, subtotalCents, method) {
 
 function buildOrder(body, items, settings, ipHash) {
   const { customer, location } = body;
-  const method = customer.delivery === 'pickup' && settings.pickup_address ? 'pickup' : 'delivery';
   const address = (customer.address ?? '').trim();
-  if (method === 'delivery' && address.length < 3) throw badRequest('Indiquez une adresse ou un repère de livraison.');
+  if (address.length < 3) throw badRequest('Indiquez une adresse ou un repère de livraison.');
 
   const allPriced = items.every((item) => item.unitPriceCents !== null);
   const subtotalCents = allPriced ? items.reduce((sum, item) => sum + item.unitPriceCents * item.quantity, 0) : null;
-  const deliveryCents = deliveryFeeCents(settings, subtotalCents, method);
+  const deliveryCents = deliveryFeeCents(settings, subtotalCents);
 
   return {
     idempotencyKey: body.idempotencyKey,
@@ -132,9 +130,9 @@ function buildOrder(body, items, settings, ipHash) {
     phone: customer.phone.trim(),
     email: (customer.email ?? '').trim(),
     city: customer.city.trim(),
-    address: method === 'pickup' ? PICKUP_ADDRESS : address,
+    address,
     customerNote: (customer.note ?? '').trim(),
-    deliveryMethod: method,
+    deliveryMethod: 'delivery',
     latitude: location?.lat ?? null,
     longitude: location?.lng ?? null,
     locationAccuracy: location?.accuracy == null ? null : Math.round(location.accuracy),
@@ -170,14 +168,12 @@ export function whatsAppMessage(order, settings) {
     }),
     '',
     `Sous-total : ${money(order.subtotal_cents)}`,
-    order.delivery_method === 'pickup'
-      ? 'Retrait en boutique'
-      : `Livraison : ${order.delivery_cents === 0 ? 'offerte' : money(order.delivery_cents)}`,
+    `Livraison : ${order.delivery_cents === 0 ? 'offerte' : money(order.delivery_cents)}`,
     `*Total : ${money(order.total_cents)}*`,
     '',
     `Nom : ${order.customer_name}`,
     `Téléphone : ${order.phone}`,
-    order.delivery_method === 'pickup' ? `Ville : ${order.city}` : `Adresse : ${order.address}, ${order.city}`,
+    `Adresse : ${order.address}, ${order.city}`,
   ];
   if (order.latitude !== null) lines.push(`Position : https://maps.google.com/?q=${order.latitude},${order.longitude}`);
   if (order.customer_note) lines.push(`Note : ${order.customer_note}`);

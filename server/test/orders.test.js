@@ -34,16 +34,17 @@ test('the answer carries the WhatsApp message, written from the saved order', as
   assert.equal(whatsappUrl, `https://wa.me/2250700000000?text=${encodeURIComponent(message)}`);
 });
 
-test('pick-up orders need no address and pay no delivery', async () => {
-  await app.repos.settings.setMany({ pickup_address: 'Boutique Cocody', delivery_fee: '200000' });
+test('there is no boutique: a pick-up request is still delivered and pays delivery', async () => {
+  await app.repos.settings.setMany({ delivery_fee: '200000' });
   const body = orderBody({ items: [{ perfumeId: ids.ambreId, option: '50 ml', quantity: 1 }] });
-  body.customer = { ...body.customer, address: '', delivery: 'pickup' };
+  body.customer = { ...body.customer, delivery: 'pickup' };
   const response = await place(body, '10.0.0.8');
   assert.equal(response.statusCode, 201);
   const order = await app.repos.orders.findByIdempotencyKey(body.idempotencyKey);
   const saved = await app.repos.orders.get(order.id);
-  assert.equal(saved.delivery_method, 'pickup');
-  assert.equal(saved.total_cents, 3500000);
+  assert.equal(saved.delivery_method, 'delivery');
+  assert.equal(saved.total_cents, 3700000);
+  assert.doesNotMatch(response.json().message, /boutique/i);
 });
 
 test('a delivery order without an address is refused', async () => {

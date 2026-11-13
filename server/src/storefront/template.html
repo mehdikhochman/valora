@@ -52,6 +52,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer;background:none;border:0;padding:0}
 :focus-visible{outline:1.5px solid var(--ink);outline-offset:3px}
 ::selection{background:var(--ink);color:var(--paper)}
+[hidden]{display:none!important}
 .sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .skip{position:absolute;left:12px;top:-60px;z-index:100;background:var(--ink);color:var(--paper);padding:10px 16px;text-decoration:none}
 .skip:focus{top:12px}
@@ -141,9 +142,27 @@ p{margin:0}
 .price{font-size:.9rem;color:var(--ink)}
 .price s{color:var(--faint);margin-left:6px}
 .price small{color:var(--faint);font-size:.85em;margin-right:4px}
-.add{position:relative;z-index:2;display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line-2);border-radius:50%;color:var(--ink);transition:background .2s,color .2s,border-color .2s}
-.add .i{width:16px;height:16px}
-.add:hover,.add.done{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.add{position:relative;z-index:2;display:grid;place-items:center;width:38px;height:38px;flex:none;border:1px solid var(--ink);border-radius:50%;background:var(--ink);color:var(--paper);transition:background .2s,color .2s,border-color .2s}
+.add .i{width:17px;height:17px;stroke-width:1.6}
+.add:hover,.add.done,.add[aria-expanded="true"]{background:var(--copper);border-color:var(--copper)}
+/* Size picker opened by the + on a card: sits over the bottom of the picture */
+.card{container-type:inline-size}
+.pick{position:absolute;z-index:3;left:8px;right:8px;top:calc(125cqw - 8px);transform:translateY(-100%);display:grid;gap:6px;padding:10px;background:var(--paper);box-shadow:0 10px 30px rgba(28,23,20,.18);animation:pick-in .18s var(--ease)}
+@keyframes pick-in{from{opacity:0;transform:translateY(calc(-100% + 8px))}}
+.pick-h{font:500 .62rem/1.4 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.pick-sizes{display:flex;gap:4px}
+.pick-sizes button{flex:1;min-height:34px;padding:4px 6px;border:1px solid var(--line-2);font-size:.8rem;white-space:nowrap}
+.pick-sizes button:hover{border-color:var(--ink)}
+.pick-sizes [aria-checked="true"]{border-color:var(--ink);background:var(--ink);color:var(--paper)}
+.pick-qty{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line-2)}
+.pick-qty button{display:grid;place-items:center;width:40px;height:36px}
+.pick-qty button:hover{background:var(--stone)}
+.pick-qty .i{width:15px;height:15px}
+.pick-qty output{font-size:.95rem;min-width:2ch;text-align:center}
+.pick-add{min-height:40px;padding:8px;background:var(--ink);color:var(--paper);font-size:.8rem;letter-spacing:.03em;white-space:nowrap}
+.pick-add:hover{background:var(--copper)}
+@container (max-width:220px){.pick{left:4px;right:4px;padding:8px 6px;gap:5px}.pick-sizes button{font-size:.7rem;padding:4px 2px}.pick-add{font-size:.7rem;padding:6px 4px}.pick-qty button{width:34px;height:32px}.pick-h{font-size:.56rem}}
+.pick button:hover,.pick button:focus-visible{border-color:var(--ink);background:var(--stone)}
 
 /* ---------- Shop toolbar ---------- */
 .toolbar{position:sticky;top:var(--bar-h);z-index:30;background:rgba(250,248,245,.94);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);margin-bottom:28px}
@@ -396,6 +415,9 @@ fieldset{border:0;padding:0;margin:0}
 /* Toast */
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));z-index:200;transform:translate(-50%,16px);opacity:0;padding:11px 16px;background:var(--ink);color:var(--paper);font-size:.84rem;transition:transform .3s var(--ease),opacity .25s;pointer-events:none;display:flex;gap:8px;align-items:center;white-space:nowrap}
 .toast .i{width:16px;height:16px}
+.toast.has-act{pointer-events:auto}
+.toast-act{margin-left:6px;padding:4px 10px;border:1px solid rgba(255,255,255,.45);color:var(--paper);font-size:.78rem;letter-spacing:.04em}
+.toast-act:hover{background:var(--paper);color:var(--ink)}
 .toast.on{transform:translate(-50%,0);opacity:1}
 
 /* Reveal: a short fade, once */
@@ -547,7 +569,7 @@ fieldset{border:0;padding:0;margin:0}
         <img src="/assets/brand/logo-ink.webp" width="480" height="465" alt="{{brand_name}}" loading="lazy">
         <p>{{seo_description}}</p>
       </div>
-      <div><h4>Boutique</h4><ul><li><a href="#collection" data-cat="">Toute la collection</a></li>{{{footer_category_links}}}<li><a href="#finder">Trouver mon parfum</a></li></ul></div>
+      <div><h4>Parfums</h4><ul><li><a href="#collection" data-cat="">Toute la collection</a></li>{{{footer_category_links}}}<li><a href="#finder">Trouver mon parfum</a></li></ul></div>
       <div><h4>Contact</h4><ul>{{{contact_links}}}</ul></div>
       <div><h4>Informations</h4><ul><li><a href="#commander">Comment commander</a></li><li><a href="#guide">Questions fréquentes</a></li><li>{{payment_note}}</li><li>{{policy_returns}}</li><li><button class="btn btn-line install" type="button" id="installBtn">Installer l’application</button></li></ul></div>
     </div>
@@ -608,7 +630,6 @@ fieldset{border:0;padding:0;margin:0}
     <p class="muted" style="font-size:.9rem">Vos coordonnées accompagnent la commande envoyée sur WhatsApp. Elles ne servent qu’à vous livrer.</p>
     <div class="field"><label for="c-name">Nom et prénom</label><input id="c-name" name="name" autocomplete="name" required minlength="2" maxlength="80"></div>
     <div class="field"><label for="c-phone">Téléphone (WhatsApp)</label><input id="c-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="07 07 00 00 00"></div>
-    <fieldset class="field" id="methodField" hidden><legend>Réception</legend><div class="seg" role="radiogroup"><button type="button" role="radio" aria-checked="true" data-method="delivery">Livraison</button><button type="button" role="radio" aria-checked="false" data-method="pickup">Retrait en boutique</button></div></fieldset>
     <div class="field"><label for="c-city">Ville / commune</label><input id="c-city" name="city" list="cities" autocomplete="address-level2" required minlength="2" maxlength="60"><datalist id="cities">{{{city_options}}}</datalist></div>
     <div class="field" id="addressField"><label for="c-address">Adresse ou point de repère</label><textarea id="c-address" name="address" autocomplete="street-address" maxlength="300" placeholder="Quartier, rue, immeuble, repère…"></textarea>
       <button type="button" class="locate" id="locate"><svg class="i"><use href="#i-pin"/></svg><span>Partager ma position (facultatif)</span></button></div>
