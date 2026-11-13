@@ -23,6 +23,9 @@ two Vercel-connected services. Set them up once:
 2. **Storage → Create Database → Turso** → connect it to this project.
    This adds `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`.
    If your integration names them differently, add them under these names.
+   A database created directly on turso.tech works too: copy its URL, create a token, and add
+   both variables by hand. The site runs in Dublin (`regions` in `vercel.json`), next to a Turso
+   database in `aws-eu-west-1`; keep the two in the same region.
 3. **Storage → Create → Blob** → connect it to this project. This adds `BLOB_READ_WRITE_TOKEN`.
 4. **Settings → Environment Variables**, add for **Production and Preview**:
    - `OWNER_EMAIL`: your email, for the first admin account
